@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="crm-shell">
+  <aside class="crm-sidebar"><a class="brand sidebar-brand" href="/crm"><span class="brand-mark">C</span><span>clair<span class="brand-accent">IA</span></span></a><span class="sidebar-label">ESPACE COMMERCIAL</span><a class="side-link" href="/crm">Vue d’ensemble</a>{% for slug, item in sections %}<a class="side-link {% if item == label %}active{% endif %}" href="/crm/{{ slug }}">{{ item }}</a>{% endfor %}{% if user.role == "admin" %}<a class="side-link" href="/crm/admin/utilisateurs">Utilisateurs</a>{% endif %}<div class="sidebar-user"><span class="avatar">{{ user.first_name[:1] }}{{ user.last_name[:1] }}</span><div><b>{{ user.first_name }} {{ user.last_name }}</b><small>{{ user.role }}</small></div></div></aside>
+  <section class="crm-main"><div class="crm-top"><div><span class="eyebrow">CRM · DONNÉES EXISTANTES</span><h1>{{ label }}</h1><p>Les suppressions sont désactivées pour préserver l’historique et les relations.</p></div><a class="text-link" href="/crm">← Tableau de bord</a></div>
+    {% if saved %}<div class="success-box">Les modifications ont été enregistrées.</div>{% endif %}
+    {% if can_write %}<div class="table-actions"><a class="button button-primary" href="/crm/{{ section }}/new">Créer un enregistrement <span>＋</span></a></div>{% endif %}
+    {% if error %}<div class="notice notice-warn">{{ error }}</div>{% elif rows is none %}<div class="notice notice-warn">Données indisponibles.</div>{% elif not rows %}<div class="empty-state">Aucune donnée à afficher.</div>{% else %}
+    <div class="table-wrap"><table><thead><tr>{% for column in columns %}<th>{{ column|replace("_", " ")|title }}</th>{% endfor %}{% if can_write %}<th>Actions</th>{% endif %}</tr></thead><tbody>{% for row in rows %}<tr>{% for column in columns %}<td>{{ row[column] if row[column] is not none else "—" }}</td>{% endfor %}{% if can_write %}<td><a class="action-link" href="/crm/{{ section }}/{{ row.id }}/edit">Modifier</a></td>{% endif %}</tr>{% endfor %}</tbody></table></div><p class="table-footnote">Affichage limité aux 100 enregistrements les plus récents.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

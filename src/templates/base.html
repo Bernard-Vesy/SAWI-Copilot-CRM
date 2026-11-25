@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#14243a">
+  <title>{{ title }} — ClairIA</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="ClairIA, accueil">
+      <span class="brand-mark">C</span><span>clair<span class="brand-accent">IA</span></span>
+    </a>
+    <nav aria-label="Navigation principale">
+      {% for label, url in nav %}<a href="{{ url }}">{{ label }}</a>{% endfor %}
+      <a class="nav-cta" href="/login">Espace CRM <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+  <footer class="site-footer">
+    <a class="brand footer-brand" href="/"><span class="brand-mark">C</span><span>clair<span class="brand-accent">IA</span></span></a>
+    <p>L’IA concrète pour les PME. <span class="footer-divider">·</span> L’humain décide. L’IA accélère.</p>
+    <span>© ClairIA · Suisse romande</span>
+  </footer>
+</body>
+</html>

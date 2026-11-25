@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="contact-layout">
+  <div class="contact-copy"><span class="eyebrow">FAISONS CONNAISSANCE</span><h1>Parlons de<br><span class="text-blue">votre projet.</span></h1><p>Un premier échange, sans jargon ni engagement. Décrivez-nous votre besoin et nous reviendrons vers vous.</p><div class="contact-promise"><span>✳</span><p><b>Un échange humain</b><br>Une réponse adaptée à votre situation, pas un discours tout fait.</p></div></div>
+  <div class="form-card">
+    {% if sent %}<div class="success-box"><b>Merci pour votre message.</b><br>Votre demande a bien été transmise à l’équipe ClairIA.</div>{% endif %}
+    {% if error %}<div class="error-box" role="alert">{{ error }}</div>{% endif %}
+    <form method="post" action="/contact">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>Prénom <span>*</span><input name="first_name" required maxlength="100" autocomplete="given-name"></label>
+      <label>Nom <span>*</span><input name="last_name" required maxlength="100" autocomplete="family-name"></label>
+      <label class="full-field">E-mail professionnel <span>*</span><input type="email" name="email" required maxlength="254" autocomplete="email"></label>
+      <label>Entreprise<input name="company_name" maxlength="200" autocomplete="organization"></label>
+      <label>Téléphone<input name="phone" maxlength="50" autocomplete="tel"></label>
+      <label class="full-field">Comment pouvons-nous vous aider ?
+        <select name="request_type"><option value="contact" {% if request_type == "contact" %}selected{% endif %}>Prendre contact</option><option value="diagnostic" {% if request_type == "diagnostic" %}selected{% endif %}>Diagnostic IA</option><option value="appointment" {% if request_type == "appointment" %}selected{% endif %}>Demander un rendez-vous</option></select>
+      </label>
+      <label class="full-field">Votre message<textarea name="message" rows="4" maxlength="5000" placeholder="Quelques mots sur votre besoin…"></textarea></label>
+      <label class="full-field">Date souhaitée (facultatif)<input type="date" name="preferred_date"></label>
+      <button class="button button-primary full-field" type="submit">Envoyer ma demande <span>→</span></button>
+      <small class="privacy-note full-field">Vos informations sont utilisées uniquement pour donner suite à votre demande.</small>
+    </form>
+  </div>
+</section>
+{% endblock %}

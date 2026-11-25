@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="login-wrap"><div class="login-card"><span class="eyebrow">ESPACE INTERNE</span><h1>Connexion au CRM</h1><p class="muted">Réservé aux membres de l’équipe ClairIA.</p>
+  {% if entra_enabled %}<a class="button button-primary button-wide" href="/auth/entra">Continuer avec Microsoft Entra ID <span>→</span></a>{% endif %}
+  {% if local_login %}{% if entra_enabled %}<div class="or-rule"><span>ou connexion locale de test</span></div>{% endif %}
+  <form method="post" action="/auth/local" class="login-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><label>Adresse e-mail<input name="email" type="email" required autocomplete="username"></label><label>Mot de passe<input name="password" type="password" required autocomplete="current-password"></label><button class="button button-dark button-wide" type="submit">Se connecter</button></form>
+  <p class="fine-print">La connexion locale vérifie un compte actif dans la base de test configurée. Aucun compte de démonstration ni mot de passe n’est fourni.</p>
+  {% elif not entra_enabled %}<div class="notice notice-warn">Aucun fournisseur d’authentification n’est configuré.</div>{% endif %}
+</div></section>
+{% endblock %}

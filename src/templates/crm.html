@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="crm-shell">
+  <aside class="crm-sidebar"><a class="brand sidebar-brand" href="/crm"><span class="brand-mark">C</span><span>clair<span class="brand-accent">IA</span></span></a><span class="sidebar-label">ESPACE COMMERCIAL</span><a class="side-link active" href="/crm">Vue d’ensemble</a>
+    {% for slug, item in sections %}<a class="side-link" href="/crm/{{ slug }}">{{ item }}</a>{% endfor %}
+    {% if user.role == "admin" %}<a class="side-link" href="/crm/admin/utilisateurs">Utilisateurs</a>{% endif %}
+    <div class="sidebar-user"><span class="avatar">{{ user.first_name[:1] }}{{ user.last_name[:1] }}</span><div><b>{{ user.first_name }} {{ user.last_name }}</b><small>{{ user.role }}</small></div></div>
+    <form method="post" action="/auth/logout"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="logout-button">Se déconnecter ↗</button></form>
+  </aside>
+  <section class="crm-main"><div class="crm-top"><div><span class="eyebrow">VOTRE ACTIVITÉ</span><h1>Bonjour, {{ user.first_name }} <span class="wave">✳</span></h1><p>Voici les repères clés de votre activité commerciale.</p></div><span class="role-pill">{{ user.role }}</span></div>
+    {% if database_error %}<div class="notice notice-warn"><b>Données non disponibles</b><p>{{ database_error }}</p><small>Le CRM ne se connecte jamais tant que DATABASE_ENABLED et les paramètres réseau/TLS ne sont pas explicitement définis.</small></div>
+    {% else %}
+    <div class="metric-grid"><article class="metric-card"><span>Pipeline pondéré</span><b>{{ data.pipeline.weighted if data.pipeline else "—" }} <small>CHF</small></b><small>Opportunités ouvertes</small></article><article class="metric-card"><span>Chiffre d’affaires facturé</span><b>{{ data.revenue.revenue if data.revenue else "—" }} <small>CHF</small></b><small>Factures actives</small></article><article class="metric-card"><span>Nouveaux prospects · 30 j</span><b>{{ data.new_prospects.count if data.new_prospects else 0 }}</b><small>Taux de conversion : {% if data.conversion and data.conversion.total %}{{ (data.conversion.converted * 100 / data.conversion.total)|round(1) }} %{% else %}0 %{% endif %}</small></article><article class="metric-card"><span>Panier moyen gagné</span><b>{{ data.average_deal.average if data.average_deal else "—" }} <small>CHF</small></b><small>Opportunités conclues</small></article></div>
+    <div class="crm-panel"><div class="panel-heading"><div><span class="eyebrow">SUIVI COMMERCIAL</span><h2>Opportunités par étape</h2></div><a href="/crm/opportunites">Toutes les opportunités →</a></div>
+      {% if data.opportunities %}<div class="stage-list">{% for row in data.opportunities %}<div class="stage-row"><span>{{ row.stage }}</span><div class="stage-track"><i style="width: {{ [row.count * 12, 100]|min }}%"></i></div><b>{{ row.count }}</b><span>{{ row.value }} CHF</span></div>{% endfor %}</div>{% else %}<p class="empty-state">Aucune opportunité à afficher.</p>{% endif %}
+    </div>
+    <div class="report-grid">
+      <div class="crm-panel"><div class="panel-heading"><div><span class="eyebrow">PROSPECTION</span><h2>Par canton</h2></div><a href="/crm/prospects">Prospects →</a></div>
+        {% for row in data.by_canton %}<div class="compact-row"><span>{{ row.label }}</span><b>{{ row.count }}</b></div>{% else %}<p class="empty-state">Pas de données de canton.</p>{% endfor %}
+      </div>
+      <div class="crm-panel"><div class="panel-heading"><div><span class="eyebrow">ORIGINE</span><h2>Sources de prospects</h2></div></div>
+        {% for row in data.by_source %}<div class="compact-row"><span>{{ row.label }}</span><b>{{ row.count }}</b></div>{% else %}<p class="empty-state">Pas de sources renseignées.</p>{% endfor %}
+      </div>
+      <div class="crm-panel"><div class="panel-heading"><div><span class="eyebrow">OFFRE</span><h2>Opportunités par service</h2></div><a href="/crm/services">Services →</a></div>
+        {% for row in data.by_service %}<div class="compact-row"><span>{{ row.label or "Sans service" }}</span><b>{{ row.value }} CHF</b></div>{% else %}<p class="empty-state">Pas de données de service.</p>{% endfor %}
+      </div>
+      <div class="crm-panel"><div class="panel-heading"><div><span class="eyebrow">FACTURATION</span><h2>Revenus mensuels</h2></div><a href="/crm/factures">Factures →</a></div>
+        {% for row in data.monthly_revenue %}<div class="compact-row"><span>{{ row.label }}</span><b>{{ row.value }} CHF</b></div>{% else %}<p class="empty-state">Pas de revenus facturés.</p>{% endfor %}
+      </div>
+      <div class="crm-panel"><div class="panel-heading"><div><span class="eyebrow">ÉQUIPE</span><h2>Pipeline par responsable</h2></div></div>
+        {% for row in data.pipeline_by_owner %}<div class="compact-row"><span>{{ row.first_name }} {{ row.last_name }}</span><b>{{ row.weighted }} CHF</b></div>{% else %}<p class="empty-state">Pas de pipeline attribué.</p>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

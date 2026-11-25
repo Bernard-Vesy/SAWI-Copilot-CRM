@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="crm-shell">
+  <aside class="crm-sidebar"><a class="brand sidebar-brand" href="/crm"><span class="brand-mark">C</span><span>clair<span class="brand-accent">IA</span></span></a><span class="sidebar-label">ESPACE COMMERCIAL</span><a class="side-link" href="/crm">Vue d’ensemble</a>{% for slug, item in sections %}<a class="side-link {% if item == label %}active{% endif %}" href="/crm/{{ slug }}">{{ item }}</a>{% endfor %}<div class="sidebar-user"><span class="avatar">{{ user.first_name[:1] }}{{ user.last_name[:1] }}</span><div><b>{{ user.first_name }} {{ user.last_name }}</b><small>{{ user.role }}</small></div></div></aside>
+  <section class="crm-main">
+    <div class="crm-top"><div><span class="eyebrow">CRM · {{ label|upper }}</span><h1>{{ "Créer" if mode == "create" else "Modifier" }} {{ label|lower }}</h1><p>Les données sont enregistrées dans la base configurée.</p></div><a class="text-link" href="/crm/{{ section }}">← Retour à {{ label|lower }}</a></div>
+    {% if form_error %}<div class="error-box" role="alert">{{ form_error }}</div>{% endif %}
+    <div class="form-card record-card">
+      <form class="record-form" method="post" action="{% if mode == 'create' %}/crm/{{ section }}/new{% else %}/crm/{{ section }}/{{ record_id }}/edit{% endif %}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        {% for field in fields %}
+        <label class="{% if field.kind == 'textarea' %}full-field{% elif field.kind == 'checkbox' %}checkbox-label{% endif %}">
+          {{ field.label }}{% if field.required %} <span>*</span>{% endif %}
+          {% if field.kind == "textarea" %}
+          <textarea name="{{ field.name }}" {% if field.required %}required{% endif %} {% if field.max_length %}maxlength="{{ field.max_length }}"{% endif %}>{{ values.get(field.name, "") }}</textarea>
+          {% elif field.kind == "select" %}
+          <select name="{{ field.name }}" {% if field.required %}required{% endif %}>
+            {% if not field.required %}<option value="">—</option>{% endif %}
+            {% for choice in field.choices %}<option value="{{ choice }}" {% if values.get(field.name) == choice %}selected{% endif %}>{{ choice }}</option>{% endfor %}
+          </select>
+          {% elif field.kind == "checkbox" %}
+          <input type="checkbox" name="{{ field.name }}" value="1" {% if values.get(field.name) in ("True", "true", "1") %}checked{% endif %}>
+          {% else %}
+          <input name="{{ field.name }}"
+                 type="{% if field.kind == 'foreign' or field.kind == 'integer' or field.kind == 'decimal' %}number{% elif field.kind == 'datetime' %}datetime-local{% else %}{{ field.kind }}{% endif %}"
+                 value="{{ values.get(field.name, '') }}"
+                 {% if field.kind == 'decimal' %}step="0.01"{% elif field.kind == 'integer' or field.kind == 'foreign' %}step="1"{% endif %}
+                 {% if field.minimum is not none %}min="{{ field.minimum }}"{% elif field.kind == 'foreign' %}min="1"{% endif %}
+                 {% if field.maximum is not none %}max="{{ field.maximum }}"{% endif %}
+                 {% if field.kind == 'foreign' %}placeholder="ID visible dans la liste"{% endif %}
+                 {% if field.required %}required{% endif %}
+                 {% if field.max_length %}maxlength="{{ field.max_length }}"{% endif %}>
+          {% endif %}
+        </label>
+        {% endfor %}
+        <button class="button button-primary full-field" type="submit">Enregistrer <span>→</span></button>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 # SAWI-Copilot-CRM
-Application Power Apps CRM pour ClairIA, société de services informatiques et IA. Elle permet de centraliser prospects, clients, contacts, opportunités, activités commerciales, services, devis et factures, et d’offrir une vue simple et structurée du pipeline commercial et de l’activité de l’entreprise.
+Application Web FastAPI pour ClairIA, société de services informatiques et IA. Elle permet de centraliser prospects, clients, contacts, opportunités, activités commerciales, services, devis et factures, et d’offrir une vue simple et structurée du pipeline commercial et de l’activité de l’entreprise.
 
 # ClairIA CRM
 
@@ -147,7 +147,7 @@ Le modèle utilise notamment des clés étrangères, contraintes de validation e
 
 ### Vues SQL
 
-Trois vues sont prévues pour l’analyse :
+Trois vues SQL facultatives sont décrites pour l’analyse :
 
 ```text
 vw_sales_pipeline
@@ -158,6 +158,8 @@ vw_prospect_statistics
 - `vw_sales_pipeline` : suivi des opportunités et de leur valeur pondérée ;
 - `vw_monthly_revenue` : analyse mensuelle du chiffre d’affaires facturé ;
 - `vw_prospect_statistics` : analyse des prospects par canton, secteur, origine et statut.
+
+L’application calcule ses indicateurs à partir des tables existantes et ne dépend pas de ces vues.
 
 ## Dashboard
 
@@ -280,4 +282,70 @@ Il illustre le passage de la conception avec Copilot à la construction avec Git
 
 **ClairIA**  
 *L’IA concrète pour les PME.*
+
+---
+
+## Application FastAPI — développement local
+
+L’application comprend le site public (Accueil, Services, À propos, Contact), la capture des demandes Web et un espace CRM protégé par rôle. Les enregistrements CRM peuvent être créés et modifiés; les suppressions sont désactivées afin de préserver l’historique et les relations existantes.
+
+### Démarrer sans base de données
+
+Prérequis : Python 3.13.
+
+```powershell
+py -3.13 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
+Copy-Item .env.example .env
+python -m src.main
+```
+
+Dans VS Code, sélectionner l’interpréteur `.venv` et la configuration
+**Python : lancer ClairIA**, puis appuyer sur **F5**. Le site est accessible à
+`http://localhost:8000` par défaut.
+
+Le site et `/healthz` fonctionnent sans connexion MySQL. Avec `DATABASE_ENABLED=false`, le formulaire de contact explique clairement que la demande n’est pas enregistrée; le CRM signale l’absence de base. Aucune base locale de démonstration ni aucun utilisateur ou mot de passe fictif n’est créé.
+
+### Base MySQL dédiée aux tests
+
+Ne pas activer la connexion avant d’avoir reçu et validé les contraintes réseau et TLS de la base dédiée aux tests. Ne jamais utiliser la base de production. `.env.example` ne contient que des valeurs d’exemple et des marqueurs de remplacement. Ne pas partager ni committer un fichier `.env`.
+
+Une fois les paramètres approuvés, renseigner dans `.env` les valeurs `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_TLS_MODE` et `DB_TLS_CA`, puis basculer explicitement `DATABASE_ENABLED=true`. Les modes TLS acceptés sont `verify_identity` (recommandé), `verify_ca` et `disabled` pour le développement/test uniquement; TLS est obligatoire en production. Si un paramètre requis manque, `/readyz` renvoie `503` lorsque la base est activée. Une vérification `SELECT 1` est tentée uniquement quand la configuration est complète et explicitement activée; les pages/formulaires expliquent l’indisponibilité sans exposer de secret.
+
+Le code utilise des requêtes paramétrées. Il ne contient aucun `create_all`, DDL, migration ou chargement de données. Le fichier `src/schema.py` décrit les 13 tables et les contraintes communiquées; il ne génère ni ne modifie de schéma.
+
+### Authentification et rôles
+
+- En local, le formulaire de connexion vérifie un utilisateur actif et un hash bcrypt dans la base de test configurée; aucun compte de test n’est fourni.
+- En production, renseigner `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `ENTRA_CLIENT_SECRET`, `ENTRA_REDIRECT_URI` et `SESSION_SECRET` dans la configuration sécurisée de l’hôte. L’identité Entra est associée à un utilisateur CRM actif par adresse e-mail.
+- Les cookies sont HTTP-only, `SameSite=Lax` et sécurisés en production. Les formulaires qui modifient l’état sont protégés par jeton CSRF.
+- Les rôles `admin`, `manager` et `commercial` sont contrôlés côté serveur. Les commerciaux ne voient et ne modifient que les enregistrements qui leur sont attribués, ainsi que les contacts/devis liés à leurs comptes. Les demandes Web sont réservées à l’admin et au manager. La gestion des services, factures et dépenses est réservée à l’admin et au manager; les suppressions sont désactivées.
+
+### Tests hors ligne
+
+```powershell
+python -m pytest
+```
+
+Exécuter cette commande à la racine du projet. Dans VS Code, utiliser l’onglet
+**Tests** pour lancer ou déboguer les tests.
+Ne pas lancer directement un fichier `tests/test_*.py` comme script Python :
+pytest est nécessaire pour découvrir et exécuter les tests.
+
+Les tests utilisent uniquement des valeurs synthétiques et remplacent les accès MySQL par des faux. Ils vérifient la validation des formulaires, les rôles, les calculs des lignes de devis/factures et que l’accès MySQL est bloqué si la configuration n’est pas complète. Ils ne contactent aucun serveur de base de données. Aucun test d’intégration distant n’est activé par défaut.
+
+### Azure App Service Linux
+
+Configurer Python 3.13, les variables d’environnement et les secrets dans la configuration App Service (pas dans le dépôt). La cible Linux et le runtime Python sont documentés par [Microsoft Learn](https://learn.microsoft.com/azure/app-service/configure-language-python). Commande de démarrage :
+
+```text
+gunicorn -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT src.main:app
+```
+
+`PORT` est fourni par l’hôte (8000 en local). Les contrôles de santé sont `/healthz` (liveness sans dépendance DB) et `/readyz` (vérifie la configuration; exécute `SELECT 1` uniquement si la connexion DB est activée et complète). Aucun fichier d’infrastructure ni ressource Azure n’est généré par ce projet.
+
+### Tables et contraintes
+
+Le mapping de `src/schema.py` documente intégralement les tables fournies : `users`, `prospects`, `clients`, `contacts`, `services`, `opportunities`, `activities`, `quotes`, `quote_items`, `invoices`, `invoice_items`, `expenses` et `website_requests`. Il conserve les colonnes, enums, uniques, checks, index, références et suppressions en cascade/restriction/SET NULL spécifiées. Les rapports équivalents aux trois vues facultatives sont calculés depuis les tables; aucun DDL n’est nécessaire.
 
